@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Cote Réelle</title>
+<style>
+  :root{
+    --bg:#0e0e10; --panel:#19191b; --panel-2:#202022; --border:#38383a;
+    --text:#f5f5f5; --text-dim:#a8a8aa; --accent:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    width:320px; margin:0; padding:14px; background:var(--bg); color:var(--text);
+    font-family:Inter,system-ui,sans-serif; font-size:13px;
+  }
+  h1{font-size:14px;margin:0 0 4px;font-weight:700;}
+  .sub{font-size:11px;color:var(--text-dim);margin-bottom:12px;}
+  button{
+    width:100%;padding:10px;border-radius:7px;border:1px solid var(--border);
+    background:var(--panel-2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;margin-bottom:8px;
+  }
+  button.primary{background:var(--accent);color:#000;border-color:var(--accent);}
+  button:disabled{opacity:.5;cursor:default;}
+  .field{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px;}
+  .field .k{color:var(--text-dim);}
+  .field .v{font-family:monospace;font-weight:600;}
+  #status{font-size:11.5px;color:var(--text-dim);margin-top:8px;line-height:1.5;min-height:14px;}
+  #results{display:none;margin-top:10px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px;}
+</style>
+</head>
+<body>
+  <h1>🚗 Cote Réelle</h1>
+  <div class="sub">Extrait les infos de l'annonce ouverte dans cet onglet.</div>
+
+  <button class="primary" id="btn-extract">🔍 Analyser cette page</button>
+
+  <div id="results">
+    <div class="field"><span class="k">Prix</span><span class="v" id="r-prix">—</span></div>
+    <div class="field"><span class="k">Kilométrage</span><span class="v" id="r-km">—</span></div>
+    <div class="field"><span class="k">Année</span><span class="v" id="r-annee">—</span></div>
+    <div class="field"><span class="k">Marque / Modèle</span><span class="v" id="r-marque">—</span></div>
+    <div class="field"><span class="k">Carburant / Boîte</span><span class="v" id="r-meta">—</span></div>
+    <button id="btn-copy">📋 Copier pour Cote Réelle</button>
+  </div>
+
+  <div id="status"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
