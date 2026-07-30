@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cote&nbsp;Réelle — Estimateur d'achat véhicule</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e0e10;
+  --panel:#19191b;
+  --panel-2:#202022;
+  --panel-3:#2a2a2c;
+  --border:#38383a;
+  --border-soft:#2c2c2e;
+  --text:#f5f5f5;
+  --text-dim:#a8a8aa;
+  --text-faint:#767678;
+  --accent:#ffffff;
+  --accent-dim:#3a3a3c;
+  --good:#b0b0b2;
+  --good-dim:#242426;
+  --warn:#e2e2e4;
+  --warn-dim:#3a3a3c;
+  --bad:#ffffff;
+  --bad-dim:#000000;
+  --gauge-track:#2a2a2c;
+  --radius:10px;
+}
+body.light{
+  --bg:#f4f4f5;
+  --panel:#ffffff;
+  --panel-2:#f0f0f1;
+  --panel-3:#e7e7e9;
+  --border:#d8d8db;
+  --border-soft:#e2e2e4;
+  --text:#111112;
+  --text-dim:#55555a;
+  --text-faint:#84848a;
+  --accent:#000000;
+  --accent-dim:#e2e2e4;
+  --good:#3a3a3d;
+  --good-dim:#ececee;
+  --warn:#000000;
+  --warn-dim:#d6d6d9;
+  --bad:#000000;
+  --bad-dim:#c9c9cc;
+  --gauge-track:#e2e2e4;
+}
+body.light button.btn.primary{color:#ffffff;}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;}
+.mono{font-family:'JetBrains Mono',monospace;}
+a{color:var(--accent);}
+
+/* ---------- TOPBAR ---------- */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 28px;border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,#1a1a1a,#0e0e10);
+  position:sticky;top:0;z-index:50;
+  flex-wrap:wrap;gap:10px;
+}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-mark{
+  width:38px;height:38px;border-radius:8px;
+  background:conic-gradient(from 220deg,var(--good),var(--warn) 40%,var(--bad) 70%,var(--good));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Grotesk';font-weight:700;color:#000000;font-size:15px;
+  box-shadow:0 0 0 1px var(--border), 0 4px 14px rgba(0,0,0,.4);
+}
+.brand-text h1{font-size:17px;margin:0;letter-spacing:.2px;}
+.brand-text span{font-size:11.5px;color:var(--text-dim);letter-spacing:.3px;}
+.topbar-actions{display:flex;gap:8px;align-items:center;}
+button.btn{
+  font-family:'Inter';font-size:13.5px;font-weight:600;
+  border-radius:7px;padding:9px 14px;cursor:pointer;
+  border:1px solid var(--border);background:var(--panel-2);color:var(--text);
+  transition:.15s ease;
+}
+button.btn:hover{background:var(--panel-3);border-color:#3a4048;}
+button.btn.primary{background:var(--accent);border-color:var(--accent);color:#000000;}
+button.btn.primary:hover{background:#d6d6d6;}
+button.btn.ghost{background:transparent;}
+button.btn.small{padding:6px 10px;font-size:12px;}
+button.btn.danger-outline{color:var(--bad);border-color:var(--bad-dim);}
+
+/* ---------- LAYOUT ---------- */
+.layout{
+  display:grid;grid-template-columns:400px 1fr;gap:0;
+  align-items:start;
+}
+.form-panel{
+  border-right:1px solid var(--border);
+  padding:22px;
+  position:sticky;top:75px;
+  max-height:calc(100vh - 75px);
+  overflow-y:auto;
+}
+.results-panel{padding:22px 28px 60px;min-width:0;}
+
+@media (max-width:980px){
+  .layout{grid-template-columns:1fr;}
+  .form-panel{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--border);}
+}
+
+/* ---------- FORM ---------- */
+.section-block{
+  background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--radius);
+  margin-bottom:14px;overflow:hidden;
+}
+.section-head{
+  padding:12px 14px;display:flex;align-items:center;justify-content:between;gap:10px;
+  cursor:pointer;user-select:none;background:var(--panel-2);
+  display:flex;justify-content:space-between;
+}
+.section-head h3{margin:0;font-size:13.5px;letter-spacing:.3px;color:var(--text);}
+.section-head .tag{font-size:10.5px;color:var(--text-faint);font-family:'JetBrains Mono';}
+.section-body{padding:14px;display:flex;flex-direction:column;gap:10px;}
+.section-body.collapsed{display:none;}
+.chev{transition:.2s;color:var(--text-faint);font-size:12px;}
+.section-head.open .chev{transform:rotate(90deg);}
+
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:11.5px;color:var(--text-dim);font-weight:600;letter-spacing:.2px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+input[type=text],input[type=number],select{
+  background:var(--panel-3);border:1px solid var(--border);color:var(--text);
+  border-radius:7px;padding:9px 10px;font-size:13.5px;font-family:'Inter';width:100%;
+}
+input:focus,select:focus{outline:none;border-color:var(--accent);}
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px;}
+.check-item{
+  display:flex;align-items:center;gap:8px;font-size:12.8px;color:var(--text-dim);
+  background:var(--panel-3);padding:7px 9px;border-radius:6px;border:1px solid transparent;
+  cursor:pointer;
+}
+.check-item.checked{border-color:var(--good-dim);color:var(--text);background:#1a2620;}
+.check-item input{accent-color:var(--good);width:14px;height:14px;}
+.frais-row{display:flex;align-items:center;gap:8px;justify-content:space-between;}
+.frais-row .label{display:flex;align-items:center;gap:8px;font-size:12.8px;color:var(--text-dim);flex:1;}
+.frais-row input[type=number]{width:82px;text-align:right;}
+.frais-row.disabled input{opacity:.35;}
+
+.comp-row{
+  display:grid;grid-template-columns:1fr 1fr 1fr 28px;gap:6px;align-items:center;
+  background:var(--panel-3);padding:8px;border-radius:7px;
+}
+.comp-row input{padding:7px 8px;font-size:12.5px;}
+.comp-remove{
+  background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:15px;
+}
+.comp-remove:hover{color:var(--bad);}
+.add-comp-btn{
+  border:1px dashed var(--border);background:none;color:var(--text-dim);
+  padding:9px;border-radius:7px;font-size:12.5px;cursor:pointer;font-family:'Inter';font-weight:600;
+}
+.add-comp-btn:hover{border-color:var(--accent);color:var(--accent);}
+.hint{font-size:11px;color:var(--text-faint);line-height:1.5;}
+
+.save-btn-wrap{position:sticky;bottom:0;background:linear-gradient(0deg,var(--bg) 60%,transparent);padding:12px 0 2px;}
+.save-btn{width:100%;padding:12px;font-size:14px;}
+
+/* ---------- RESULTS ---------- */
+.hero-result{
+  display:grid;grid-template-columns:170px 1fr;gap:26px;
+  background:var(--panel);border:1px solid var(--border-soft);border-radius:14px;
+  padding:24px;margin-bottom:18px;align-items:center;
+}
+@media (max-width:700px){.hero-result{grid-template-columns:1fr;justify-items:center;text-align:center;}}
+.gauge-wrap{position:relative;width:170px;height:170px;}
+.gauge-num{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.gauge-num .n{font-family:'Space Grotesk';font-weight:700;font-size:38px;line-height:1;}
+.gauge-num .lbl{font-size:10.5px;color:var(--text-faint);letter-spacing:.6px;text-transform:uppercase;margin-top:4px;}
+
+.verdict-line{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.verdict-badge{
+  font-family:'Space Grotesk';font-weight:700;font-size:19px;padding:6px 14px;border-radius:20px;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.dot{width:9px;height:9px;border-radius:50%;}
+.hero-figures{display:flex;gap:26px;flex-wrap:wrap;margin-top:8px;}
+.figure .v{font-family:'JetBrains Mono';font-weight:600;font-size:19px;}
+.figure .l{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+.confidence-bar-wrap{margin-top:14px;}
+.confidence-bar-bg{width:100%;height:6px;background:var(--gauge-track);border-radius:4px;overflow:hidden;}
+.confidence-bar-fill{height:100%;border-radius:4px;transition:width .3s;}
+
+.grid-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media (max-width:700px){.grid-cards{grid-template-columns:1fr;}}
+.card{
+  background:var(--panel);border:1px solid var(--border-soft);border-radius:12px;padding:18px;
+}
+.card h3{margin:0 0 12px;font-size:13px;letter-spacing:.4px;text-transform:uppercase;color:var(--text-dim);
+  display:flex;align-items:center;gap:8px;}
+.card h3 .ic{font-size:15px;}
+
+.stat-line{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--border-soft);}
+.stat-line:last-child{border-bottom:none;}
+.stat-line .k{font-size:12.8px;color:var(--text-dim);}
+.stat-line .val{font-family:'JetBrains Mono';font-weight:600;font-size:14px;}
+.val.good{color:var(--good);} .val.warn{color:var(--warn);} .val.bad{color:var(--bad);}
+
+.range-track{position:relative;height:34px;margin:10px 0 4px;}
+.range-track .bar-bg{position:absolute;top:14px;left:0;right:0;height:6px;background:var(--gauge-track);border-radius:4px;}
+.range-track .bar-fill{position:absolute;top:14px;height:6px;border-radius:4px;background:linear-gradient(90deg,var(--warn),var(--good));}
+.range-track .marker{position:absolute;top:6px;width:2px;height:22px;background:var(--text);}
+.range-track .marker .mk-label{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:10px;font-family:'JetBrains Mono';white-space:nowrap;color:var(--text-dim);}
+
+.dist-track{position:relative;height:56px;margin:14px 0 4px;}
+.dist-track .dist-bg{position:absolute;top:26px;left:0;right:0;height:4px;background:var(--gauge-track);border-radius:3px;}
+.dist-dot{position:absolute;top:18px;width:12px;height:12px;border-radius:50%;background:var(--panel-3);border:2px solid var(--text-dim);transform:translateX(-50%);cursor:default;}
+.dist-dot.outlier{border-style:dashed;opacity:.5;}
+.dist-veh-marker{position:absolute;top:8px;width:2px;height:40px;background:var(--text);}
+.dist-veh-label{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:10px;font-family:'JetBrains Mono';white-space:nowrap;color:var(--text);font-weight:600;}
+.range-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--text-faint);font-family:'JetBrains Mono';}
+
+ul.just-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;}
+ul.just-list li{font-size:13px;color:var(--text-dim);display:flex;gap:8px;line-height:1.4;}
+ul.just-list li::before{content:"›";color:var(--accent);font-weight:700;}
+
+.comparables-list{display:flex;flex-direction:column;gap:8px;}
+.comp-item{
+  display:grid;grid-template-columns:44px 1fr auto auto auto;gap:12px;align-items:center;
+  background:var(--panel-2);padding:10px 12px;border-radius:8px;font-size:12.8px;border-left:3px solid var(--border);
+}
+.comp-item.no-photo{grid-template-columns:1fr auto auto auto;}
+.comp-thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;background:var(--panel-3);border:1px solid var(--border-soft);}
+.comp-thumb-placeholder{width:44px;height:44px;border-radius:6px;background:var(--panel-3);border:1px solid var(--border-soft);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text-faint);}
+.comp-item.below{border-left-color:var(--good);}
+.comp-item.above{border-left-color:var(--bad);}
+.comp-item .name{color:var(--text);font-weight:600;}
+.comp-item .meta{color:var(--text-faint);font-size:11.5px;}
+.comp-item .price{font-family:'JetBrains Mono';font-weight:600;}
+.comp-item .ecart{font-family:'JetBrains Mono';font-size:11.5px;}
+.comp-item .ecart.good{color:var(--good);}
+.comp-item .ecart.bad{color:var(--bad);}
+.comp-item a{font-size:11px;}
+
+.nego-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;}
+.nego-row .amount{font-family:'JetBrains Mono';font-size:20px;font-weight:700;}
+
+.suggestion-item{
+  background:var(--panel-2);border-radius:8px;padding:10px 12px;font-size:12.8px;color:var(--text-dim);
+  display:flex;gap:8px;margin-bottom:8px;border:1px solid var(--border-soft);
+}
+.suggestion-item .ic{color:var(--warn);}
+
+.empty-note{
+  background:var(--panel-2);border:1px dashed var(--border);border-radius:10px;padding:14px;
+  font-size:12.5px;color:var(--text-faint);text-align:center;
+}
+
+.disclaimer{
+  background:#1c1c1c;border:1px dashed #4a4a4a;color:#cfcfcf;border-radius:10px;padding:12px 14px;
+  font-size:12px;line-height:1.6;margin-bottom:18px;display:flex;gap:10px;
+}
+
+/* ---------- DASHBOARD / HISTORIQUE ---------- */
+.dash-section{padding:26px 28px 50px;border-top:1px solid var(--border);}
+.dash-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px;}
+@media (max-width:900px){.dash-stats{grid-template-columns:repeat(2,1fr);}}
+.dash-stat{background:var(--panel);border:1px solid var(--border-soft);border-radius:10px;padding:16px;}
+.dash-stat .n{font-family:'Space Grotesk';font-size:24px;font-weight:700;}
+.dash-stat .l{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.3px;margin-top:4px;}
+
+table.hist-table{width:100%;border-collapse:collapse;font-size:12.8px;}
+table.hist-table th{
+  text-align:left;color:var(--text-faint);font-weight:600;font-size:11px;text-transform:uppercase;
+  letter-spacing:.3px;padding:8px 10px;border-bottom:1px solid var(--border);
+}
+table.hist-table td{padding:10px;border-bottom:1px solid var(--border-soft);color:var(--text-dim);}
+table.hist-table tr:hover td{background:var(--panel-2);}
+.badge-mini{padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;}
+
+/* ---------- PRINT / PDF ---------- */
+#print-report{display:none;}
+@media print{
+  body *{visibility:hidden;}
+  #print-report, #print-report *{visibility:visible;}
+  #print-report{display:block;position:absolute;top:0;left:0;width:100%;padding:20px;color:#111;background:#fff;}
+  #print-report h1{font-size:22px;}
+  #print-report .p-section{margin-bottom:18px;}
+  #print-report table{width:100%;border-collapse:collapse;font-size:12px;}
+  #print-report td,#print-report th{border:1px solid #ccc;padding:6px 8px;}
+}
+
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">CR</div>
+    <div class="brand-text">
+      <h1>Cote&nbsp;Réelle</h1>
+      <span>Estimateur d'achat &amp; marge véhicule</span>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn ghost small" id="btn-theme">☀ Mode clair</button>
+    <button class="btn ghost small" id="btn-account">👤 Compte local</button>
+    <button class="btn ghost small" id="btn-settings">⚙ Paramètres</button>
+    <button class="btn small" id="btn-reset">↺ Réinitialiser</button>
+    <button class="btn primary" id="btn-export">⤓ Exporter en PDF</button>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- ============ FORM PANEL ============ -->
+  <div class="form-panel" id="form-panel">
+
+    <div class="disclaimer" id="settings-panel" style="display:none;">
+      ⚙ <div>
+        <strong>Paramètres de décision</strong><br>
+        <div class="row2" style="margin-top:8px;">
+          <div class="field"><label>Marge objectif (€)</label><input type="number" id="set-objectif" value="1000"></div>
+          <div class="field"><label>Marge min. acceptable (€)</label><input type="number" id="set-min" value="500"></div>
+        </div>
+        <div class="hint" style="margin-top:6px;">Ces seuils pilotent le verdict, le score et la simulation de négociation — ajustables comme le prévoit l'espace admin du cahier des charges.</div>
+      </div>
+    </div>
+
+    <div class="disclaimer" id="account-panel" style="display:none;">
+      👤 <div style="width:100%;">
+        <strong>Compte</strong>
+        <div class="hint" style="margin:4px 0 8px;">Sans compte, ton historique reste enregistré uniquement sur cet appareil (localStorage). Avec un compte (nécessite le backend PHP+MySQL fourni), il est sauvegardé sur le serveur et accessible depuis plusieurs appareils.</div>
+        <div id="account-logged-out">
+          <div class="row2">
+            <div class="field"><label>E-mail</label><input type="text" id="acc-email" placeholder="toi@exemple.com"></div>
+            <div class="field"><label>Mot de passe</label><input type="password" id="acc-password" placeholder="8 caractères min."></div>
+          </div>
+          <div class="row2" style="margin-top:6px;">
+            <button class="btn small" id="btn-login">Se connecter</button>
+            <button class="btn small" id="btn-register">Créer un compte</button>
+          </div>
+          <div class="hint" id="account-msg" style="margin-top:6px;"></div>
+        </div>
+        <div id="account-logged-in" style="display:none;">
+          <div class="stat-line" style="border:none;"><span class="k">Connecté</span><span class="val" id="account-email-display"></span></div>
+          <button class="btn small danger-outline" id="btn-logout" style="width:100%;margin-top:6px;">Se déconnecter</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analyse rapide (paste) -->
+    <div class="section-block" style="border-color:#4a4a4c;">
+      <div class="section-head open" data-target="s-paste"><h3>⚡ Analyse rapide d'une annonce</h3><span class="chev">▶</span></div>
+      <div class="section-body" id="s-paste">
+        <div class="hint">Ouvre l'annonce (Leboncoin, La Centrale, AutoScout24…), fais <strong>Ctrl+A / Ctrl+C</strong> sur la page (ou sélectionne juste le bloc titre + prix + caractéristiques), colle ici. L'outil détecte prix, kilométrage, année, carburant et boîte automatiquement.</div>
+        <div class="field"><label>Lien de l'annonce (optionnel, pour référence)</label><input type="text" id="paste-url" placeholder="https://www.leboncoin.fr/..."></div>
+        <div class="field"><label>Texte collé de l'annonce</label>
+          <textarea id="paste-text" rows="5" placeholder="Colle ici le texte de la page (titre, prix, km, année…)" style="background:var(--panel-3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:9px 10px;font-size:12.8px;font-family:'Inter';width:100%;resize:vertical;"></textarea>
+        </div>
+        <button class="btn primary small" id="btn-parse" style="width:100%;">🔍 Analyser le texte collé</button>
+        <div id="parse-result" style="display:none;">
+          <div class="hint" style="margin-top:8px;color:var(--text-dim);">Vérifie les valeurs détectées avant de les utiliser :</div>
+          <div class="row2">
+            <div class="field"><label>Prix détecté (€)</label><input type="number" id="pr-prix"></div>
+            <div class="field"><label>Km détecté</label><input type="number" id="pr-km"></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>Année détectée</label><input type="number" id="pr-annee"></div>
+            <div class="field"><label>Carburant / boîte</label><input type="text" id="pr-meta" readonly></div>
+          </div>
+          <div class="row2" style="margin-top:4px;">
+            <button class="btn small" id="btn-use-vehicule">🚗 C'est le véhicule à acheter</button>
+            <button class="btn small" id="btn-use-comp">📊 Ajouter comme comparable</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Véhicule -->
+    <div class="section-block">
+      <div class="section-head open" data-target="s-vehicule"><h3>▸ Véhicule</h3><span class="chev">▶</span></div>
+      <div class="section-body" id="s-vehicule">
+        <div class="row2">
+          <div class="field"><label>Marque</label><input type="text" id="v-marque" placeholder="Peugeot"></div>
+          <div class="field"><label>Modèle</label><input type="text" id="v-modele" placeholder="308"></div>
+        </div>
+        <div class="field"><label>Version / Finition</label><input type="text" id="v-version" placeholder="GT Line"></div>
+        <div class="row2">
+          <div class="field"><label>Année</label><input type="number" id="v-annee" placeholder="2019"></div>
+          <div class="field"><label>Kilométrage</label><input type="number" id="v-km" placeholder="85000"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Carburant</label>
+            <select id="v-carburant"><option>Diesel</option><option>Essence</option><option>Hybride</option><option>Électrique</option></select>
+          </div>
+          <div class="field"><label>Boîte</label>
+            <select id="v-boite"><option>Manuelle</option><option>Automatique</option></select>
+          </div>
+        </div>
+        <div class="row3">
+          <div class="field"><label>Puissance (DIN)</label><input type="number" id="v-puissance" placeholder="130"></div>
+          <div class="field"><label>Portes</label><input type="number" id="v-portes" placeholder="5"></div>
+          <div class="field"><label>Couleur</label><input type="text" id="v-couleur" placeholder="Gris"></div>
+        </div>
+        <div class="field"><label>Année mise en circulation</label><input type="number" id="v-mec" placeholder="2019"></div>
+      </div>
+    </div>
+
+    <!-- Historique -->
+    <div class="section-block">
+      <div class="section-head" data-target="s-historique"><h3>▸ Historique</h3><span class="chev">▶</span></div>
+      <div class="section-body collapsed" id="s-historique">
+        <div class="check-grid" id="hist-checks">
+          <label class="check-item"><input type="checkbox" data-hist="carnet"> Carnet d'entretien</label>
+          <label class="check-item"><input type="checkbox" data-hist="factures"> Factures disponibles</label>
+          <label class="check-item"><input type="checkbox" data-hist="ct"> Contrôle technique OK</label>
+          <label class="check-item"><input type="checkbox" data-hist="distrib"> Distribution faite</label>
+          <label class="check-item"><input type="checkbox" data-hist="embrayage"> Embrayage remplacé</label>
+          <label class="check-item"><input type="checkbox" data-hist="revision"> Révision récente</label>
+          <label class="check-item"><input type="checkbox" data-hist="pneus"> Pneus récents</label>
+          <label class="check-item"><input type="checkbox" data-hist="accident"> Aucun accident connu</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Équipements -->
+    <div class="section-block">
+      <div class="section-head" data-target="s-equip"><h3>⚙ Équipements</h3><span class="chev">▶</span></div>
+      <div class="section-body collapsed" id="s-equip">
+        <div class="check-grid" id="equip-checks">
+          <label class="check-item"><input type="checkbox" data-eq="gps"> GPS</label>
+          <label class="check-item"><input type="checkbox" data-eq="camera"> Caméra de recul</label>
+          <label class="check-item"><input type="checkbox" data-eq="radar"> Radars av/ar</label>
+          <label class="check-item"><input type="checkbox" data-eq="toit"> Toit ouvrant</label>
+          <label class="check-item"><input type="checkbox" data-eq="panoramique"> Toit panoramique</label>
+          <label class="check-item"><input type="checkbox" data-eq="cuir"> Cuir</label>
+          <label class="check-item"><input type="checkbox" data-eq="chauffants"> Sièges chauffants</label>
+          <label class="check-item"><input type="checkbox" data-eq="carplay"> Apple CarPlay</label>
+          <label class="check-item"><input type="checkbox" data-eq="android"> Android Auto</label>
+          <label class="check-item"><input type="checkbox" data-eq="regulateur"> Régulateur/Limiteur</label>
+          <label class="check-item"><input type="checkbox" data-eq="attelage"> Attelage</label>
+          <label class="check-item"><input type="checkbox" data-eq="jantes"> Jantes aluminium</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prix -->
+    <div class="section-block">
+      <div class="section-head" data-target="s-prix"><h3>▸ Prix d'achat</h3><span class="chev">▶</span></div>
+      <div class="section-body collapsed" id="s-prix">
+        <div class="field"><label>Prix demandé (€)</label><input type="number" id="v-prix" placeholder="7500"></div>
+      </div>
+    </div>
+
+    <!-- Annonces comparables -->
+    <div class="section-block">
+      <div class="section-head" data-target="s-comps"><h3>▸ Annonces du marché</h3><span class="chev">▶</span></div>
+      <div class="section-body collapsed" id="s-comps">
+        <div class="hint">Renseigne 3 à 10 annonces similaires trouvées sur Leboncoin / La Centrale / AutoScout24 — l'outil calcule automatiquement la cote, la fourchette et le niveau de confiance. (La récupération 100% automatique nécessite une API ou un scraping — voir note en bas de page.)</div>
+        <div id="comps-list"></div>
+        <button class="add-comp-btn" id="btn-add-comp">+ Ajouter une annonce</button>
+      </div>
+    </div>
+
+    <!-- Frais -->
+    <div class="section-block">
+      <div class="section-head" data-target="s-frais"><h3>▸ Frais à prévoir</h3><span class="chev">▶</span></div>
+      <div class="section-body collapsed" id="s-frais">
+        <div class="hint">Coche les postes concernés et ajuste le montant estimé — ils seront déduits automatiquement de la marge.</div>
+        <div id="frais-list"></div>
+      </div>
+    </div>
+
+    <div class="save-btn-wrap">
+      <button class="btn primary save-btn" id="btn-save">▸ Enregistrer cette estimation dans l'historique</button>
+    </div>
+  </div>
+
+  <!-- ============ RESULTS PANEL ============ -->
+  <div class="results-panel" id="results-panel">
+
+    <div class="disclaimer">
+      ! <div><strong>Copier-coller, pas de scraping automatique.</strong> Le point le plus complexe du projet est l'accès aux données de marché en temps réel — un navigateur ne peut pas aller chercher lui-même une page Leboncoin (blocage CORS), et un vrai scraper serveur est fragile et pas forcément autorisé par leurs CGU. Cette version utilise le bloc "⚡ Analyse rapide" en haut du formulaire : tu colles le texte d'une annonce, l'outil en extrait prix/km/année automatiquement en local, dans ton navigateur. Une vraie API ou un scraper backend reste l'évolution naturelle (voir "Évolutions futures").</div>
+    </div>
+
+    <div class="hero-result">
+      <div class="gauge-wrap">
+        <svg viewBox="0 0 170 170" width="170" height="170">
+          <circle cx="85" cy="85" r="72" fill="none" stroke="var(--gauge-track)" stroke-width="14"/>
+          <circle id="gauge-arc" cx="85" cy="85" r="72" fill="none" stroke="var(--good)" stroke-width="14"
+            stroke-dasharray="452" stroke-dashoffset="452" stroke-linecap="round"
+            transform="rotate(-90 85 85)"/>
+        </svg>
+        <div class="gauge-num">
+          <div class="n" id="score-num">--</div>
+          <div class="lbl">Score / 100</div>
+        </div>
+      </div>
+      <div>
+        <div class="verdict-line">
+          <span class="verdict-badge" id="verdict-badge"><span class="dot"></span> En attente</span>
+          <span class="mono" id="ecart-badge" style="font-size:12.5px;color:var(--text-dim);"></span>
+        </div>
+        <div class="hero-figures">
+          <div class="figure"><div class="v" id="hero-valeur">— €</div><div class="l">Valeur de marché estimée</div></div>
+          <div class="figure"><div class="v" id="hero-marge-brute">— €</div><div class="l">Marge brute</div></div>
+          <div class="figure"><div class="v" id="hero-marge-nette">— €</div><div class="l">Marge nette</div></div>
+        </div>
+        <div class="confidence-bar-wrap">
+          <div class="stat-line" style="border:none;padding:0 0 6px;"><span class="k">Confiance de l'estimation</span><span class="val mono" id="conf-num">—%</span></div>
+          <div class="confidence-bar-bg"><div class="confidence-bar-fill" id="conf-fill" style="width:0%;background:var(--good);"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-cards">
+      <div class="card">
+        <h3><span class="ic">▸</span> État du véhicule</h3>
+        <div class="stat-line"><span class="k">Excellent état (rien à prévoir)</span><span class="val" id="val-excellent">— €</span></div>
+        <div class="stat-line"><span class="k">Fourchette</span><span class="val" id="range-excellent">— € à — €</span></div>
+        <div class="stat-line"><span class="k">État moyen (petits défauts)</span><span class="val" id="val-moyen">— €</span></div>
+        <div class="stat-line"><span class="k">Fourchette</span><span class="val" id="range-moyen">— € à — €</span></div>
+      </div>
+
+      <div class="card">
+        <h3><span class="ic">▸</span> Analyse de l'achat</h3>
+        <div class="stat-line"><span class="k">Prix d'achat</span><span class="val" id="a-prix">— €</span></div>
+        <div class="stat-line"><span class="k">Frais estimés</span><span class="val" id="a-frais">— €</span></div>
+        <div class="stat-line"><span class="k">Coût réel</span><span class="val" id="a-cout">— €</span></div>
+        <div class="stat-line"><span class="k">Marge nette</span><span class="val" id="a-marge">— €</span></div>
+        <div class="stat-line"><span class="k">ROI</span><span class="val" id="a-roi">— %</span></div>
+        <div class="stat-line"><span class="k">Temps moyen de revente (estimé)</span><span class="val" id="a-temps" style="font-size:12px;">—</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h3><span class="ic">▸</span> Règles de décision (marge nette)</h3>
+      <div class="range-track" id="range-track">
+        <div class="bar-bg"></div>
+        <div class="bar-fill" id="rt-fill"></div>
+        <div class="marker" id="rt-marker"><div class="mk-label" id="rt-marker-label">marge</div></div>
+      </div>
+      <div class="range-labels"><span>&lt; 500 € mauvaise</span><span>1000 € objectif</span><span>&gt; 2000 € très bonne</span></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h3><span class="ic">▸</span> Répartition des annonces du marché</h3>
+      <div class="dist-track" id="dist-track">
+        <div class="dist-bg"></div>
+        <div id="dist-dots"></div>
+        <div class="dist-veh-marker" id="dist-veh-marker"><div class="dist-veh-label" id="dist-veh-label">ton prix</div></div>
+      </div>
+      <div class="range-labels" id="dist-labels"><span>—</span><span>moyenne</span><span>—</span></div>
+      <div class="hint" style="margin-top:6px;">Chaque point = une annonce ajustée à ton véhicule. Le repère vertical clair montre où se situe le prix demandé.</div>
+    </div>
+
+    <div class="grid-cards">
+      <div class="card">
+        <h3><span class="ic">▸</span> Justification</h3>
+        <ul class="just-list" id="justif-list"></ul>
+      </div>
+      <div class="card">
+        <h3><span class="ic">▸</span> Simulation de négociation</h3>
+        <div class="nego-row"><span class="k">Prix affiché</span><span class="amount mono" id="nego-affiche">— €</span></div>
+        <div class="nego-row"><span class="k">Prix conseillé pour acheter</span><span class="amount mono" style="color:var(--good)" id="nego-conseille">— €</span></div>
+        <div class="nego-row"><span class="k">Maximum conseillé</span><span class="amount mono" style="color:var(--warn)" id="nego-max">— €</span></div>
+        <div class="hint" id="nego-note" style="margin-top:6px;"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h3><span class="ic">▸</span> Annonces comparables renseignées</h3>
+      <div class="comparables-list" id="comparables-list">
+        <div class="empty-note">Ajoute des annonces dans le panneau de gauche pour voir la comparaison ici.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="ic">!</span> Suggestions d'amélioration</h3>
+      <div id="suggestions-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DASHBOARD / HISTORIQUE ============ -->
+<div class="dash-section">
+  <h2 style="margin:0 0 16px;font-size:16px;">▸ Tableau de bord</h2>
+  <div class="dash-stats">
+    <div class="dash-stat"><div class="n" id="d-count">0</div><div class="l">Véhicules étudiés</div></div>
+    <div class="dash-stat"><div class="n" id="d-avg">0 €</div><div class="l">Marge moyenne</div></div>
+    <div class="dash-stat"><div class="n" id="d-best">—</div><div class="l">Meilleure affaire</div></div>
+    <div class="dash-stat"><div class="n" id="d-worst">—</div><div class="l">Pire affaire</div></div>
+    <div class="dash-stat"><div class="n" id="d-refused">0</div><div class="l">Affaires refusées</div></div>
+  </div>
+
+  <h2 style="margin:26px 0 12px;font-size:16px;">▸ Historique des recherches</h2>
+  <div style="overflow-x:auto;">
+    <table class="hist-table">
+      <thead><tr><th>Date</th><th>Véhicule</th><th>Prix achat</th><th>Estimation</th><th>Marge nette</th><th>Décision</th><th></th></tr></thead>
+      <tbody id="hist-tbody"></tbody>
+    </table>
+  </div>
+  <div class="empty-note" id="hist-empty" style="margin-top:10px;">Aucune estimation enregistrée pour l'instant.</div>
+</div>
+
+<!-- ============ PRINT REPORT (hidden, used for PDF export) ============ -->
+<div id="print-report">
+  <h1>Cote Réelle — Rapport d'estimation</h1>
+  <div class="p-section" id="pr-vehicule"></div>
+  <div class="p-section" id="pr-valeurs"></div>
+  <div class="p-section" id="pr-analyse"></div>
+  <div class="p-section" id="pr-nego"></div>
+  <div class="p-section" id="pr-comps"></div>
+  <div class="p-section" id="pr-suggestions"></div>
+</div>
+
+<script>
+/* ============================================================
+   ÉTAT
+=============================================================*/
+let state = {
+  hist: {}, eq: {}, comps: [], frais: {},
+  settings: { objectif: 1000, min: 500 }
+};
+
+const FRAIS_DEFS = [
+  {key:'vidange', label:'Vidange', def:80},
+  {key:'plaquettes', label:'Plaquettes', def:120},
+  {key:'disques', label:'Disques', def:150},
+  {key:'pneus', label:'Pneus (jeu de 4)', def:400},
+  {key:'distribution', label:'Distribution', def:450},
+  {key:'embrayage', label:'Embrayage', def:600},
+  {key:'controle', label:'Contrôle technique', def:80},
+  {key:'nettoyage', label:'Nettoyage / esthétique', def:60},
+  {key:'cartegrise', label:'Carte grise', def:50},
+  {key:'transport', label:'Transport', def:100},
+  {key:'divers', label:'Divers', def:100},
+];
+
+const HIST_KEYS = ['carnet','factures','ct','distrib','embrayage','revision','pneus','accident'];
+const EQ_KEYS = ['gps','camera','radar','toit','panoramique','cuir','chauffants','carplay','android','regulateur','attelage','jantes'];
+
+/* ============================================================
+   INIT — sections accordéon
+=============================================================*/
+document.querySelectorAll('.section-head').forEach(h=>{
+  h.addEventListener('click', ()=>{
+    const body = document.getElementById(h.dataset.target);
+    body.classList.toggle('collapsed');
+    h.classList.toggle('open');
+  });
+});
+
+const THEME_KEY = 'cotereelle_theme';
+function applyTheme(theme){
+  document.body.classList.toggle('light', theme === 'light');
+  document.getElementById('btn-theme').textContent = theme === 'light' ? '● Mode sombre' : '☀ Mode clair';
+}
+applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+document.getElementById('btn-theme').addEventListener('click', ()=>{
+  const next = document.body.classList.contains('light') ? 'dark' : 'light';
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+});
+
+document.getElementById('btn-settings').addEventListener('click', ()=>{
+  const p = document.getElementById('settings-panel');
+  p.style.display = p.style.display === 'none' ? 'flex' : 'none';
+});
+document.getElementById('set-objectif').addEventListener('input', e=>{ state.settings.objectif = +e.target.value || 1000; render(); });
+document.getElementById('set-min').addEventListener('input', e=>{ state.settings.min = +e.target.value || 500; render(); });
+
+/* ---- historique checkboxes ---- */
+document.querySelectorAll('#hist-checks input').forEach(cb=>{
+  cb.addEventListener('change', ()=>{
+    state.hist[cb.dataset.hist] = cb.checked;
+    cb.closest('.check-item').classList.toggle('checked', cb.checked);
+    render();
+  });
+});
+document.querySelectorAll('#equip-checks input').forEach(cb=>{
+  cb.addEventListener('change', ()=>{
+    state.eq[cb.dataset.eq] = cb.checked;
+    cb.closest('.check-item').classList.toggle('checked', cb.checked);
+    render();
+  });
+});
+
+/* ---- frais ---- */
+function renderFraisForm(){
+  const c = document.getElementById('frais-list');
+  c.innerHTML = '';
+  FRAIS_DEFS.forEach(f=>{
+    if(!(f.key in state.frais)) state.frais[f.key] = {checked:false, amount:f.def};
+    const row = document.createElement('div');
+    row.className = 'frais-row' + (state.frais[f.key].checked ? '' : ' disabled');
+    row.innerHTML = `
+      <label class="label"><input type="checkbox" data-frais-check="${f.key}" ${state.frais[f.key].checked?'checked':''}> ${f.label}</label>
+      <input type="number" data-frais-amount="${f.key}" value="${state.frais[f.key].amount}">`;
+    c.appendChild(row);
+  });
+  c.querySelectorAll('[data-frais-check]').forEach(cb=>{
+    cb.addEventListener('change', e=>{
+      state.frais[cb.dataset.fraisCheck].checked = cb.checked;
+      renderFraisForm(); render();
+    });
+  });
+  c.querySelectorAll('[data-frais-amount]').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      state.frais[inp.dataset.fraisAmount].amount = +inp.value || 0;
+      render();
+    });
+  });
+}
+renderFraisForm();
+
+/* ---- comparables ---- */
+function addCompRow(data){
+  data = data || {prix:'', km:'', annee:'', lien:'', date:'', vendue:false, photo:'', departement:''};
+  state.comps.push(data);
+  renderCompsForm();
+}
+function renderCompsForm(){
+  const c = document.getElementById('comps-list');
+  c.innerHTML = '';
+  state.comps.forEach((comp, i)=>{
+    const row = document.createElement('div');
+    row.className = 'comp-row';
+    row.style.gridTemplateColumns = '1fr 1fr 1fr 28px';
+    if(comp.vendue) row.style.opacity = '0.45';
+    row.innerHTML = `
+      <input type="number" placeholder="Prix €" value="${comp.prix}" data-i="${i}" data-f="prix">
+      <input type="number" placeholder="Km" value="${comp.km}" data-i="${i}" data-f="km">
+      <input type="number" placeholder="Année" value="${comp.annee}" data-i="${i}" data-f="annee">
+      <button class="comp-remove" data-remove="${i}">✕</button>
+      <input type="text" placeholder="Lien (optionnel)" value="${comp.lien||''}" data-i="${i}" data-f="lien" style="grid-column:1/3;margin-top:4px;">
+      <input type="text" placeholder="Dépt (ex: 75)" maxlength="3" value="${comp.departement||''}" data-i="${i}" data-f="departement" style="grid-column:3/4;margin-top:4px;">
+      <input type="text" placeholder="URL photo (optionnel)" value="${comp.photo||''}" data-i="${i}" data-f="photo" style="grid-column:1/3;margin-top:4px;">
+      <input type="date" title="Date de l'annonce" value="${comp.date||''}" data-i="${i}" data-f="date" style="grid-column:3/4;margin-top:4px;">
+      <label style="grid-column:1/5;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-faint);margin-top:4px;cursor:pointer;">
+        <input type="checkbox" data-vendue="${i}" ${comp.vendue?'checked':''} style="width:13px;height:13px;"> Annonce vendue / retirée (exclue du calcul, conservée pour référence)
+      </label>`;
+    c.appendChild(row);
+  });
+  c.querySelectorAll('input[data-f]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      state.comps[+inp.dataset.i][inp.dataset.f] = inp.value;
+      render();
+    });
+  });
+  c.querySelectorAll('[data-vendue]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      state.comps[+cb.dataset.vendue].vendue = cb.checked;
+      renderCompsForm(); render();
+    });
+  });
+  c.querySelectorAll('[data-remove]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.comps.splice(+btn.dataset.remove, 1);
+      renderCompsForm(); render();
+    });
+  });
+}
+document.getElementById('btn-add-comp').addEventListener('click', ()=>addCompRow());
+// pré-remplir 3 lignes vides pour guider l'utilisateur
+addCompRow(); addCompRow(); addCompRow();
+
+/* ============================================================
+   ANALYSE RAPIDE — parsing d'un texte d'annonce collé
+   (pas de scraping réseau : le navigateur ne peut pas aller
+   chercher lui-même une page Leboncoin — CORS. L'utilisateur
+   colle le texte de la page, on l'analyse en local.)
+=============================================================*/
+let lastParsed = null;
+
+const MARQUES = ['Peugeot','Renault','Citroën','Citroen','Volkswagen','VW','Audi','BMW','Mercedes','Mercedes-Benz','Opel',
+  'Ford','Toyota','Nissan','Fiat','Seat','Skoda','Škoda','Dacia','Hyundai','Kia','Mini','Volvo','Mazda','Honda',
+  'Suzuki','Alfa Romeo','Jeep','Land Rover','Range Rover','Porsche','Tesla','DS','Smart','Lexus','Subaru','Mitsubishi','Chevrolet','Jaguar'];
+
+function detectMarqueModele(titre){
+  for(const m of MARQUES){
+    const re = new RegExp('\\b' + m.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+    const match = titre.match(re);
+    if(match){
+      const after = titre.slice(match.index + match[0].length).trim();
+      const modele = after.split(/[-–,(]/)[0].trim().split(/\s+/).slice(0,2).join(' ');
+      return {marque: m, modele: modele||''};
+    }
+  }
+  return {marque:'', modele:''};
+}
+
+function parseAnnonceText(text){
+  const clean = text.replace(/\u00a0/g,' ');
+
+  // Prix : nombre suivi de € (ou EUR), on garde le plus plausible (500 à 200000)
+  const priceMatches = [...clean.matchAll(/(\d[\d\s]{2,7})\s?(?:€|EUR)/gi)]
+    .map(m=>parseInt(m[1].replace(/\s/g,''),10))
+    .filter(n=>n>=300 && n<=300000);
+  const prix = priceMatches.length ? priceMatches[0] : null;
+
+  // Kilométrage
+  const kmMatch = clean.match(/(\d[\d\s]{2,6})\s?km/i);
+  const km = kmMatch ? parseInt(kmMatch[1].replace(/\s/g,''),10) : null;
+
+  // Année (1990-2026, en excluant ce qui ressemble à un kilométrage/prix déjà capté)
+  const yearMatches = [...clean.matchAll(/\b(19[9]\d|20[0-2]\d)\b/g)].map(m=>parseInt(m[1],10));
+  const annee = yearMatches.length ? yearMatches[0] : null;
+
+  const carburant = /hybride/i.test(clean) ? 'Hybride' : /électrique/i.test(clean) ? 'Électrique' : /essence/i.test(clean) ? 'Essence' : /diesel/i.test(clean) ? 'Diesel' : null;
+  const boite = /automatique/i.test(clean) ? 'Automatique' : /manuelle/i.test(clean) ? 'Manuelle' : null;
+
+  const titre = clean.split('\n').map(l=>l.trim()).filter(Boolean)[0] || '';
+  const {marque, modele} = detectMarqueModele(titre + ' ' + clean.slice(0,300));
+
+  return {prix, km, annee, carburant, boite, titre, marque, modele};
+}
+
+document.getElementById('btn-parse').addEventListener('click', ()=>{
+  const text = document.getElementById('paste-text').value;
+  if(!text.trim()){ alert('Colle d\'abord le texte de l\'annonce.'); return; }
+  lastParsed = parseAnnonceText(text);
+  document.getElementById('pr-prix').value = lastParsed.prix || '';
+  document.getElementById('pr-km').value = lastParsed.km || '';
+  document.getElementById('pr-annee').value = lastParsed.annee || '';
+  const metaParts = [lastParsed.marque, lastParsed.modele, lastParsed.carburant, lastParsed.boite].filter(Boolean);
+  document.getElementById('pr-meta').value = metaParts.join(' / ') || 'non détecté';
+  document.getElementById('parse-result').style.display = 'block';
+  if(!lastParsed.prix && !lastParsed.km && !lastParsed.annee){
+    alert('Rien de détecté automatiquement — renseigne les champs à la main ci-dessous, ou complète le formulaire manuellement plus bas.');
+  }
+});
+
+document.getElementById('btn-use-vehicule').addEventListener('click', ()=>{
+  const prix = +document.getElementById('pr-prix').value || 0;
+  const km = +document.getElementById('pr-km').value || 0;
+  const annee = +document.getElementById('pr-annee').value || 0;
+  if(prix) document.getElementById('v-prix').value = prix;
+  if(km) document.getElementById('v-km').value = km;
+  if(annee){ document.getElementById('v-annee').value = annee; document.getElementById('v-mec').value = annee; }
+  if(lastParsed && lastParsed.carburant) document.getElementById('v-carburant').value = lastParsed.carburant;
+  if(lastParsed && lastParsed.boite) document.getElementById('v-boite').value = lastParsed.boite;
+  if(lastParsed && lastParsed.marque) document.getElementById('v-marque').value = lastParsed.marque;
+  if(lastParsed && lastParsed.modele) document.getElementById('v-modele').value = lastParsed.modele;
+  render();
+  document.getElementById('s-vehicule').classList.remove('collapsed');
+  document.querySelector('[data-target="s-vehicule"]').classList.add('open');
+});
+
+document.getElementById('btn-use-comp').addEventListener('click', ()=>{
+  const prix = document.getElementById('pr-prix').value;
+  const km = document.getElementById('pr-km').value;
+  const annee = document.getElementById('pr-annee').value;
+  if(!prix || !km || !annee){ alert('Il faut au minimum prix, km et année pour ajouter une annonce comparable.'); return; }
+  state.comps.push({prix, km, annee, lien: document.getElementById('paste-url').value || '', date: new Date().toISOString().slice(0,10), vendue:false});
+  renderCompsForm();
+  render();
+  document.getElementById('s-comps').classList.remove('collapsed');
+  document.querySelector('[data-target="s-comps"]').classList.add('open');
+  document.getElementById('paste-text').value='';
+  document.getElementById('paste-url').value='';
+  document.getElementById('parse-result').style.display='none';
+});
+
+/* ============================================================
+   MOTEUR DE CALCUL
+=============================================================*/
+function getVehicule(){
+  return {
+    marque: val('v-marque'), modele: val('v-modele'), version: val('v-version'),
+    annee: +val('v-annee') || null, km: +val('v-km') || null,
+    carburant: val('v-carburant'), boite: val('v-boite'),
+    puissance: +val('v-puissance') || null, portes: +val('v-portes') || null,
+    couleur: val('v-couleur'), mec: +val('v-mec') || null,
+    prix: +val('v-prix') || 0,
+  };
+}
+function val(id){ return document.getElementById(id).value; }
+
+function computeAll(){
+  const veh = getVehicule();
+  const currentYear = new Date().getFullYear();
+  const allComps = state.comps.filter(c=>c.prix && c.km && c.annee).map(c=>({
+    prix:+c.prix, km:+c.km, annee:+c.annee, lien:c.lien||'', date:c.date||'', vendue:!!c.vendue, photo:c.photo||'', departement:c.departement||''
+  }));
+  const comps = allComps.filter(c=>!c.vendue); // exclues du calcul mais gardées dans l'historique visuel
+
+  // Ajustement non-linéaire : en % du prix (plus réaliste qu'un forfait fixe en €),
+  // avec un taux de décote annuel qui diminue avec l'âge du véhicule (dépréciation
+  // automobile plus forte les premières années).
+  function ajusterPrix(c){
+    let p = c.prix;
+    if(veh.km) p -= (c.km - veh.km) * (c.prix * 0.00004); // ~4% du prix tous les 100 000 km d'écart
+    if(veh.annee){
+      const age = Math.max(currentYear - c.annee, 0);
+      const tauxAnnuel = age <= 3 ? 0.12 : age <= 6 ? 0.08 : 0.05;
+      p += (veh.annee - c.annee) * (c.prix * tauxAnnuel);
+    }
+    return Math.max(p, 0);
+  }
+  let ajustesBrut = comps.map(ajusterPrix);
+
+  // Pondération par ancienneté de l'annonce (demi-vie ~30 jours) : une annonce
+  // récente pèse plus qu'une annonce ancienne dans la moyenne.
+  function poidsDate(dateStr){
+    if(!dateStr) return 1;
+    const days = (Date.now() - new Date(dateStr).getTime()) / 86400000;
+    if(isNaN(days) || days < 0) return 1;
+    return Math.pow(0.5, days/30);
+  }
+  let poids = comps.map(c=>poidsDate(c.date));
+
+  // Détection d'annonces aberrantes (écart > 1.6x l'écart-type de la moyenne),
+  // seulement si assez de données (4+) pour que l'écart-type ait un sens.
+  let isOutlier = comps.map(()=>false);
+  if(ajustesBrut.length >= 4){
+    const m = ajustesBrut.reduce((a,b)=>a+b,0)/ajustesBrut.length;
+    const variance = ajustesBrut.reduce((a,b)=>a+(b-m)*(b-m),0)/ajustesBrut.length;
+    const sd = Math.sqrt(variance);
+    if(sd > 0){
+      isOutlier = ajustesBrut.map(v => Math.abs(v-m) > 1.6*sd);
+    }
+  }
+
+  // valeurs utilisées pour la moyenne pondérée : on retire les outliers
+  const ajustes = ajustesBrut; // toutes les valeurs ajustées (affichage)
+  const idxValides = ajustesBrut.map((_,i)=>i).filter(i=>!isOutlier[i]);
+  const sommePoids = idxValides.reduce((s,i)=>s+poids[i],0);
+
+  const nHist = HIST_KEYS.filter(k=>state.hist[k]).length;
+  const nEq = EQ_KEYS.filter(k=>state.eq[k]).length;
+
+  let valeurMoyenne = null, fourchetteBasse=null, fourchetteHaute=null, confiance=0;
+  if(idxValides.length){
+    valeurMoyenne = idxValides.reduce((s,i)=> s + ajustesBrut[i]*poids[i], 0) / sommePoids;
+    const valides = idxValides.map(i=>ajustesBrut[i]);
+    fourchetteBasse = Math.min(...valides);
+    fourchetteHaute = Math.max(...valides);
+    const spread = fourchetteHaute - fourchetteBasse;
+    const spreadRatio = valeurMoyenne ? spread/valeurMoyenne : 1;
+    confiance = Math.round(Math.min(95, 40 + idxValides.length*6 - spreadRatio*40));
+    confiance = Math.max(30, confiance);
+  }
+
+  const etatBonus = (nHist/HIST_KEYS.length) * 0.06; // jusqu'à +6% pour état/entretien complet
+  const valExcellent = valeurMoyenne !== null ? valeurMoyenne * (1 + etatBonus) : null;
+  const valMoyen = valeurMoyenne !== null ? valeurMoyenne * (0.9 + etatBonus*0.5) : null;
+
+  const fraisTotal = FRAIS_DEFS.reduce((sum,f)=> sum + (state.frais[f.key]?.checked ? state.frais[f.key].amount : 0), 0);
+
+  const margeBrute = valeurMoyenne !== null ? valeurMoyenne - veh.prix : null;
+  const coutReel = veh.prix + fraisTotal;
+  const margeNette = valeurMoyenne !== null ? valeurMoyenne - coutReel : null;
+  const roi = (margeNette !== null && coutReel>0) ? (margeNette/coutReel*100) : null;
+
+  // Temps moyen de revente : estimation qualitative (pas de vraie donnée
+  // de vitesse de vente disponible) basée sur la confiance — plus il y a
+  // d'annonces comparables, plus le marché est liquide/documenté.
+  let tempsRevente = null;
+  if(comps.length){
+    if(confiance >= 75) tempsRevente = '2 à 3 semaines (marché bien documenté)';
+    else if(confiance >= 50) tempsRevente = '3 à 6 semaines';
+    else tempsRevente = '6 semaines ou plus (peu de données de marché)';
+  }
+
+  let verdict = 'en attente', color='var(--text-faint)';
+  if(margeNette !== null){
+    if(margeNette < 500){ verdict='Mauvaise affaire'; color='var(--bad)'; }
+    else if(margeNette < 1000){ verdict='Affaire moyenne'; color='var(--warn)'; }
+    else if(margeNette < 2000){ verdict='Bonne affaire'; color='var(--good)'; }
+    else { verdict='Très bonne affaire'; color='var(--good)'; }
+  }
+
+  let score = 0;
+  if(margeNette !== null){
+    const margeScore = Math.max(0, Math.min(1, margeNette / (state.settings.objectif*2))) * 50;
+    const confScore = (confiance/100) * 30;
+    const etatScore = (nHist/HIST_KEYS.length) * 20;
+    score = Math.round(margeScore + confScore + etatScore);
+  }
+
+  const negoConseille = valeurMoyenne !== null ? valeurMoyenne - state.settings.objectif : null;
+  const negoMax = valeurMoyenne !== null ? valeurMoyenne - state.settings.min : null;
+
+  let ecartPct = null, ecartLabel = null;
+  if(valeurMoyenne !== null && veh.prix){
+    ecartPct = ((veh.prix - valeurMoyenne)/valeurMoyenne)*100;
+    if(ecartPct <= -15) ecartLabel = 'Très bonne affaire';
+    else if(ecartPct <= -5) ecartLabel = 'Bonne affaire';
+    else if(ecartPct <= 5) ecartLabel = 'Prix cohérent';
+    else ecartLabel = 'Surévaluée';
+  }
+
+  return {veh, comps, allComps, isOutlier, ajustes, nHist, nEq, valeurMoyenne, fourchetteBasse, fourchetteHaute,
+    confiance, valExcellent, valMoyen, fraisTotal, margeBrute, coutReel, margeNette, roi, tempsRevente,
+    verdict, color, score, negoConseille, negoMax, ecartPct, ecartLabel};
+}
+
+/* ============================================================
+   RENDU
+=============================================================*/
+function eur(n){ return n===null||n===undefined||isNaN(n) ? '—' : Math.round(n).toLocaleString('fr-FR') + ' €'; }
+function pct(n){ return n===null||n===undefined||isNaN(n) ? '—' : (n>=0?'+':'') + n.toFixed(1) + ' %'; }
+
+function render(){
+  const r = computeAll();
+
+  // gauge
+  const circumference = 452;
+  const offset = circumference - (r.score/100)*circumference;
+  document.getElementById('gauge-arc').style.strokeDashoffset = offset;
+  document.getElementById('gauge-arc').style.stroke = r.score>=70?'var(--good)':r.score>=40?'var(--warn)':'var(--bad)';
+  document.getElementById('score-num').textContent = r.margeNette!==null ? r.score : '--';
+
+  // verdict badge
+  const badge = document.getElementById('verdict-badge');
+  badge.innerHTML = `<span class="dot" style="background:${r.color}"></span> ${r.verdict}`;
+  badge.style.background = r.color.replace('var(--bad)','var(--bad-dim)').replace('var(--warn)','var(--warn-dim)').replace('var(--good)','var(--good-dim)');
+  badge.style.color = r.color;
+
+  const ecartBadge = document.getElementById('ecart-badge');
+  if(r.ecartPct !== null){
+    ecartBadge.textContent = `${r.ecartLabel} : ${r.ecartPct<=0?'-'+Math.abs(r.ecartPct).toFixed(0):'+'+r.ecartPct.toFixed(0)}% ${r.ecartPct<=0?'sous':'au-dessus du'} prix du marché`;
+  } else {
+    ecartBadge.textContent = '';
+  }
+
+  document.getElementById('hero-valeur').textContent = eur(r.valeurMoyenne);
+  document.getElementById('hero-marge-brute').textContent = eur(r.margeBrute);
+  document.getElementById('hero-marge-nette').textContent = eur(r.margeNette);
+
+  document.getElementById('conf-num').textContent = r.comps.length ? r.confiance+'%' : '—';
+  const cf = document.getElementById('conf-fill');
+  cf.style.width = (r.confiance||0)+'%';
+  cf.style.background = r.confiance>=75?'var(--good)':r.confiance>=50?'var(--warn)':'var(--bad)';
+
+  document.getElementById('val-excellent').textContent = eur(r.valExcellent);
+  document.getElementById('range-excellent').textContent = r.valExcellent ? `${eur(r.valExcellent*0.97)} à ${eur(r.valExcellent*1.03)}` : '— € à — €';
+  document.getElementById('val-moyen').textContent = eur(r.valMoyen);
+  document.getElementById('range-moyen').textContent = r.valMoyen ? `${eur(r.valMoyen*0.97)} à ${eur(r.valMoyen*1.03)}` : '— € à — €';
+
+  document.getElementById('a-prix').textContent = eur(r.veh.prix);
+  document.getElementById('a-frais').textContent = eur(r.fraisTotal);
+  document.getElementById('a-cout').textContent = eur(r.coutReel);
+  const am = document.getElementById('a-marge');
+  am.textContent = eur(r.margeNette);
+  am.className = 'val ' + (r.margeNette===null?'':r.margeNette<500?'bad':r.margeNette<1000?'warn':'good');
+  document.getElementById('a-roi').textContent = r.roi===null?'—':r.roi.toFixed(1)+' %';
+  document.getElementById('a-temps').textContent = r.tempsRevente || '—';
+
+  // range track marker
+  const min=0, max=2500;
+  const clampedMarge = r.margeNette===null?0:Math.max(min,Math.min(max,r.margeNette));
+  const posPct = (clampedMarge/max)*100;
+  document.getElementById('rt-fill').style.width = posPct+'%';
+  const marker = document.getElementById('rt-marker');
+  marker.style.left = `calc(${posPct}% - 1px)`;
+  document.getElementById('rt-marker-label').textContent = r.margeNette===null?'':eur(r.margeNette);
+
+  // répartition des annonces (nuage de points)
+  const distDots = document.getElementById('dist-dots');
+  const distVehMarker = document.getElementById('dist-veh-marker');
+  const distLabels = document.getElementById('dist-labels');
+  if(r.comps.length && r.valeurMoyenne !== null){
+    const values = r.ajustes.slice();
+    if(r.veh.prix) values.push(r.veh.prix);
+    let lo = Math.min(...values), hi = Math.max(...values);
+    const pad = (hi-lo)*0.1 || hi*0.1 || 500;
+    lo -= pad; hi += pad;
+    const toPct = v => hi>lo ? ((v-lo)/(hi-lo))*100 : 50;
+    distDots.innerHTML = r.ajustes.map((v,i)=>{
+      const p = toPct(v);
+      return `<div class="dist-dot ${r.isOutlier[i]?'outlier':''}" style="left:${p}%;" title="${eur(v)}"></div>`;
+    }).join('');
+    if(r.veh.prix){
+      distVehMarker.style.display = 'block';
+      distVehMarker.style.left = `calc(${toPct(r.veh.prix)}% - 1px)`;
+      document.getElementById('dist-veh-label').textContent = eur(r.veh.prix);
+    } else {
+      distVehMarker.style.display = 'none';
+    }
+    distLabels.innerHTML = `<span>${eur(lo)}</span><span>moyenne : ${eur(r.valeurMoyenne)}</span><span>${eur(hi)}</span>`;
+  } else {
+    distDots.innerHTML = '';
+    distVehMarker.style.display = 'none';
+    distLabels.innerHTML = '<span>—</span><span>Ajoute des annonces pour voir la répartition</span><span>—</span>';
+  }
+
+  // justification
+  const justifs = [];
+  if(r.comps.length){
+    justifs.push(`Basé sur ${r.comps.length} annonce${r.comps.length>1?'s':''} similaire${r.comps.length>1?'s':''} renseignée${r.comps.length>1?'s':''}.`);
+  } else {
+    justifs.push('Aucune annonce comparable renseignée pour l\'instant — ajoute des annonces pour obtenir une estimation.');
+  }
+  if(r.veh.km && r.comps.length){
+    const kmMoyen = r.comps.reduce((a,b)=>a+b.km,0)/r.comps.length;
+    if(r.veh.km < kmMoyen) justifs.push(`Kilométrage inférieur à la moyenne des annonces (${Math.round(kmMoyen).toLocaleString('fr-FR')} km en moyenne).`);
+    else if(r.veh.km > kmMoyen) justifs.push(`Kilométrage supérieur à la moyenne des annonces — pèse sur la cote.`);
+  }
+  if(r.veh.boite === 'Automatique') justifs.push('Boîte automatique — généralement valorisée sur le marché de l\'occasion.');
+  if(r.nHist === HIST_KEYS.length) justifs.push('Historique d\'entretien complet.');
+  else if(r.nHist === 0) justifs.push('Aucun élément d\'historique renseigné — la fiabilité de l\'estimation en dépend.');
+  if(r.nEq >= 6) justifs.push(`Bien équipé (${r.nEq} équipements cochés) — argument de revente.`);
+  document.getElementById('justif-list').innerHTML = justifs.map(j=>`<li>${j}</li>`).join('');
+
+  // négociation
+  document.getElementById('nego-affiche').textContent = eur(r.veh.prix);
+  document.getElementById('nego-conseille').textContent = eur(r.negoConseille);
+  document.getElementById('nego-max').textContent = eur(r.negoMax);
+  const negoNote = document.getElementById('nego-note');
+  if(r.veh.prix && r.negoMax !== null){
+    negoNote.textContent = r.veh.prix > r.negoMax
+      ? '! Le prix affiché dépasse le maximum conseillé — à éviter en l\'état, ou à négocier fermement.'
+      : '✓ Le prix affiché est dans une fourchette raisonnable par rapport au marché renseigné.';
+  } else { negoNote.textContent = ''; }
+
+  // comparables
+  const compList = document.getElementById('comparables-list');
+  if(r.comps.length || r.allComps.some(c=>c.vendue)){
+    const rows = r.comps.map((c,i)=>{
+      const adj = r.ajustes[i];
+      const ecart = r.veh.prix ? ((adj - r.veh.prix)/r.veh.prix*100) : null;
+      const below = r.veh.prix && adj < r.veh.prix;
+      const outlier = r.isOutlier[i];
+      const thumb = c.photo
+        ? `<img class="comp-thumb" src="${c.photo}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'comp-thumb-placeholder',textContent:'🚗'}))">`
+        : `<div class="comp-thumb-placeholder">🚗</div>`;
+      return `<div class="comp-item ${below?'above':'below'}" ${outlier?'style="opacity:.55;border-left-style:dashed;"':''}>
+        ${thumb}
+        <div><div class="name">${r.veh.marque||'Véhicule'} ${r.veh.modele||''} — ${c.annee} ${outlier?'⚠️':''}</div><div class="meta">${c.km.toLocaleString('fr-FR')} km${c.departement?` · ${c.departement}`:''}${c.date?` · ${c.date}`:''}${c.lien?` · <a href="${c.lien}" target="_blank" rel="noopener">voir l'annonce ↗</a>`:''}${outlier?' · <strong>aberrante, exclue de la moyenne</strong>':''}</div></div>
+        <div class="price">${eur(c.prix)}</div>
+        <div class="meta">ajusté: ${eur(adj)}</div>
+        <div class="ecart ${below?'bad':'good'}">${ecart===null?'—':pct(ecart)}</div>
+      </div>`;
+    }).join('');
+    const vendues = r.allComps.filter(c=>c.vendue).map(c=>{
+      const thumb = c.photo
+        ? `<img class="comp-thumb" src="${c.photo}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'comp-thumb-placeholder',textContent:'🚗'}))">`
+        : `<div class="comp-thumb-placeholder">🚗</div>`;
+      return `<div class="comp-item" style="opacity:.4;border-left-style:dotted;">
+        ${thumb}
+        <div><div class="name">${c.annee} — vendue / retirée</div><div class="meta">${c.km.toLocaleString('fr-FR')} km${c.departement?` · ${c.departement}`:''}${c.date?` · ${c.date}`:''}</div></div>
+        <div class="price">${eur(c.prix)}</div>
+        <div class="meta">exclue du calcul</div>
+        <div class="ecart">—</div>
+      </div>`;
+    }).join('');
+    compList.innerHTML = rows + vendues;
+  } else {
+    compList.innerHTML = '<div class="empty-note">Ajoute des annonces dans le panneau de gauche pour voir la comparaison ici.</div>';
+  }
+
+  // suggestions
+  const sugg = [];
+  if(!state.hist.pneus) sugg.push('Des pneus neufs peuvent augmenter le prix de vente d\'environ 150 à 250 €.');
+  if(!state.hist.revision) sugg.push('Une révision récente rassure l\'acheteur et peut justifier un prix plus élevé.');
+  if(!state.hist.ct) sugg.push('Un contrôle technique à jour accélère généralement la revente.');
+  if(!state.hist.carnet || !state.hist.factures) sugg.push('Réunir carnet d\'entretien et factures renforce la confiance acheteur.');
+  if(!state.hist.distrib) sugg.push('Si la distribution approche de l\'échéance, anticipe ce point dans la négociation à l\'achat.');
+  if(r.nEq < 4) sugg.push('Peu d\'équipements confort recensés — vérifie qu\'il n\'en manque pas dans l\'annonce d\'origine.');
+  const sc = document.getElementById('suggestions-list');
+  sc.innerHTML = sugg.length ? sugg.map(s=>`<div class="suggestion-item"><span class="ic">!</span>${s}</div>`).join('') : '<div class="empty-note">Tout est déjà coché — rien à améliorer côté historique.</div>';
+
+  return r;
+}
+
+/* ============================================================
+   COMPTE (backend optionnel) — connexion/inscription/déconnexion.
+   Si aucun backend n'est déployé à côté du fichier, les appels
+   échouent silencieusement et l'outil reste 100% fonctionnel en
+   local (localStorage), comme avant.
+=============================================================*/
+const API_BASE = 'backend/api.php'; // adapte ce chemin si le backend est hébergé ailleurs
+let authState = { checked:false, authenticated:false, email:null };
+
+async function apiCall(action, method='GET', body=null){
+  try{
+    const opts = { method, credentials:'include', headers:{} };
+    if(body){ opts.headers['Content-Type']='application/json'; opts.body = JSON.stringify(body); }
+    const res = await fetch(`${API_BASE}?action=${action}`, opts);
+    const data = await res.json().catch(()=>null);
+    return {ok: res.ok, status: res.status, data};
+  }catch(e){
+    return {ok:false, status:0, data:null, networkError:true};
+  }
+}
+
+function updateAccountUI(){
+  const btn = document.getElementById('btn-account');
+  const loggedOut = document.getElementById('account-logged-out');
+  const loggedIn = document.getElementById('account-logged-in');
+  if(authState.authenticated){
+    btn.textContent = '👤 ' + authState.email;
+    loggedOut.style.display = 'none';
+    loggedIn.style.display = 'block';
+    document.getElementById('account-email-display').textContent = authState.email;
+  } else {
+    btn.textContent = '👤 Compte local';
+    loggedOut.style.display = 'block';
+    loggedIn.style.display = 'none';
+  }
+}
+
+async function checkAuth(){
+  const r = await apiCall('me');
+  authState.checked = true;
+  authState.authenticated = !!(r.ok && r.data && r.data.authenticated);
+  authState.email = (r.ok && r.data && r.data.email) || null;
+  updateAccountUI();
+  renderDashboard();
+}
+
+document.getElementById('btn-account').addEventListener('click', ()=>{
+  const p = document.getElementById('account-panel');
+  p.style.display = p.style.display === 'none' ? 'flex' : 'none';
+});
+
+document.getElementById('btn-login').addEventListener('click', async ()=>{
+  const email = document.getElementById('acc-email').value.trim();
+  const password = document.getElementById('acc-password').value;
+  const msg = document.getElementById('account-msg');
+  msg.textContent = 'Connexion...';
+  const r = await apiCall('login', 'POST', {email, password});
+  if(r.networkError){ msg.textContent = "Pas de backend détecté à l'adresse " + API_BASE + " — l'outil continue de fonctionner en local."; return; }
+  if(r.ok && r.data && r.data.ok){ authState.authenticated=true; authState.email=r.data.email; updateAccountUI(); renderDashboard(); msg.textContent=''; }
+  else { msg.textContent = (r.data && r.data.error) || 'Échec de connexion.'; }
+});
+
+document.getElementById('btn-register').addEventListener('click', async ()=>{
+  const email = document.getElementById('acc-email').value.trim();
+  const password = document.getElementById('acc-password').value;
+  const msg = document.getElementById('account-msg');
+  msg.textContent = 'Création du compte...';
+  const r = await apiCall('register', 'POST', {email, password});
+  if(r.networkError){ msg.textContent = "Pas de backend détecté à l'adresse " + API_BASE + " — l'outil continue de fonctionner en local."; return; }
+  if(r.ok && r.data && r.data.ok){ authState.authenticated=true; authState.email=r.data.email; updateAccountUI(); renderDashboard(); msg.textContent=''; }
+  else { msg.textContent = (r.data && r.data.error) || 'Échec de création de compte.'; }
+});
+
+document.getElementById('btn-logout').addEventListener('click', async ()=>{
+  await apiCall('logout', 'POST', {});
+  authState.authenticated = false; authState.email = null;
+  updateAccountUI(); renderDashboard();
+});
+
+/* ============================================================
+   HISTORIQUE / DASHBOARD
+   — utilise le backend si un compte est connecté, sinon localStorage.
+=============================================================*/
+const STORAGE_KEY = 'cotereelle_historique';
+function loadHistLocal(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY))||[]; }catch(e){ return []; } }
+function saveHistLocal(list){ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+
+document.getElementById('btn-save').addEventListener('click', async ()=>{
+  const r = computeAll();
+  const entry = {
+    date: new Date().toLocaleDateString('fr-FR'),
+    vehicule: `${r.veh.marque||'—'} ${r.veh.modele||''}`.trim(),
+    prix: r.veh.prix, estimation: r.valeurMoyenne, marge: r.margeNette, verdict: r.verdict
+  };
+  if(authState.authenticated){
+    await apiCall('save', 'POST', {
+      vehicule: entry.vehicule, prix_achat: entry.prix, estimation: entry.estimation,
+      marge_nette: entry.marge, verdict: entry.verdict, payload: {veh:r.veh, comps:state.comps, hist:state.hist, eq:state.eq}
+    });
+  } else {
+    const list = loadHistLocal();
+    list.unshift(entry);
+    saveHistLocal(list);
+  }
+  renderDashboard();
+});
+
+async function renderDashboard(){
+  let list;
+  if(authState.authenticated){
+    const r = await apiCall('list');
+    list = (r.ok && r.data && r.data.items) ? r.data.items.map(it=>({
+      date: it.created_at ? new Date(it.created_at).toLocaleDateString('fr-FR') : '',
+      vehicule: it.vehicule, prix: it.prix_achat!==null?+it.prix_achat:null,
+      estimation: it.estimation!==null?+it.estimation:null, marge: it.marge_nette!==null?+it.marge_nette:null,
+      verdict: it.verdict, _id: it.id
+    })) : [];
+  } else {
+    list = loadHistLocal();
+  }
+
+  document.getElementById('hist-empty').style.display = list.length ? 'none' : 'block';
+  const tbody = document.getElementById('hist-tbody');
+  tbody.innerHTML = list.map((h,i)=>{
+    const color = h.verdict==='Mauvaise affaire'?'var(--bad)':h.verdict==='Affaire moyenne'?'var(--warn)':'var(--good)';
+    const bg = h.verdict==='Mauvaise affaire'?'var(--bad-dim)':h.verdict==='Affaire moyenne'?'var(--warn-dim)':'var(--good-dim)';
+    return `<tr>
+      <td>${h.date}</td><td>${h.vehicule||'—'}</td><td>${eur(h.prix)}</td><td>${eur(h.estimation)}</td><td>${eur(h.marge)}</td>
+      <td><span class="badge-mini" style="color:${color};background:${bg}">${h.verdict}</span></td>
+      <td><button class="btn small ghost" data-del="${i}">✕</button></td>
+    </tr>`;
+  }).join('');
+  tbody.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const idx = +btn.dataset.del;
+      if(authState.authenticated){
+        await apiCall('delete', 'POST', {id: list[idx]._id});
+      } else {
+        const l = loadHistLocal(); l.splice(idx,1); saveHistLocal(l);
+      }
+      renderDashboard();
+    });
+  });
+
+  document.getElementById('d-count').textContent = list.length;
+  const marges = list.map(h=>h.marge).filter(m=>m!==null && m!==undefined);
+  document.getElementById('d-avg').textContent = marges.length ? eur(marges.reduce((a,b)=>a+b,0)/marges.length) : '0 €';
+  if(marges.length){
+    const best = list.reduce((a,b)=> (b.marge>a.marge?b:a));
+    const worst = list.reduce((a,b)=> (b.marge<a.marge?b:a));
+    document.getElementById('d-best').textContent = best.vehicule || eur(best.marge);
+    document.getElementById('d-worst').textContent = worst.vehicule || eur(worst.marge);
+  }
+  document.getElementById('d-refused').textContent = list.filter(h=>h.verdict==='Mauvaise affaire').length;
+}
+checkAuth(); // vérifie la session, puis appelle renderDashboard() une fois le statut connu
+
+/* ============================================================
+   RESET
+=============================================================*/
+document.getElementById('btn-reset').addEventListener('click', ()=>{
+  if(!confirm('Réinitialiser le formulaire en cours (l\'historique enregistré est conservé) ?')) return;
+  document.querySelectorAll('.form-panel input[type=text], .form-panel input[type=number]').forEach(i=>i.value='');
+  document.querySelectorAll('.form-panel input[type=checkbox]').forEach(i=>{ i.checked=false; i.closest('.check-item')?.classList.remove('checked'); });
+  state.hist = {}; state.eq = {}; state.comps = []; state.frais = {};
+  renderFraisForm();
+  addCompRow(); addCompRow(); addCompRow();
+  render();
+});
+
+/* ============================================================
+   EXPORT PDF (impression)
+=============================================================*/
+document.getElementById('btn-export').addEventListener('click', ()=>{
+  const r = computeAll();
+  document.getElementById('pr-vehicule').innerHTML = `
+    <h2>Véhicule</h2>
+    <table><tr><th>Marque</th><td>${r.veh.marque||'—'}</td><th>Modèle</th><td>${r.veh.modele||'—'}</td></tr>
+    <tr><th>Année</th><td>${r.veh.annee||'—'}</td><th>Kilométrage</th><td>${r.veh.km?r.veh.km.toLocaleString('fr-FR')+' km':'—'}</td></tr>
+    <tr><th>Carburant</th><td>${r.veh.carburant}</td><th>Boîte</th><td>${r.veh.boite}</td></tr>
+    <tr><th>Prix demandé</th><td colspan="3">${eur(r.veh.prix)}</td></tr></table>`;
+  document.getElementById('pr-valeurs').innerHTML = `
+    <h2>Estimation de marché</h2>
+    <table><tr><th>Valeur moyenne</th><td>${eur(r.valeurMoyenne)}</td></tr>
+    <tr><th>Excellent état</th><td>${eur(r.valExcellent)}</td></tr>
+    <tr><th>État moyen</th><td>${eur(r.valMoyen)}</td></tr>
+    <tr><th>Confiance</th><td>${r.confiance}%</td></tr></table>`;
+  document.getElementById('pr-analyse').innerHTML = `
+    <h2>Analyse de l'achat</h2>
+    <table><tr><th>Frais estimés</th><td>${eur(r.fraisTotal)}</td></tr>
+    <tr><th>Coût réel</th><td>${eur(r.coutReel)}</td></tr>
+    <tr><th>Marge brute</th><td>${eur(r.margeBrute)}</td></tr>
+    <tr><th>Marge nette</th><td>${eur(r.margeNette)}</td></tr>
+    <tr><th>ROI</th><td>${r.roi===null?'—':r.roi.toFixed(1)+'%'}</td></tr>
+    <tr><th>Verdict</th><td>${r.verdict}</td></tr></table>`;
+  document.getElementById('pr-nego').innerHTML = `
+    <h2>Négociation</h2>
+    <table><tr><th>Prix affiché</th><td>${eur(r.veh.prix)}</td></tr>
+    <tr><th>Prix conseillé</th><td>${eur(r.negoConseille)}</td></tr>
+    <tr><th>Maximum conseillé</th><td>${eur(r.negoMax)}</td></tr></table>`;
+  document.getElementById('pr-comps').innerHTML = `
+    <h2>Annonces comparables</h2>
+    <table><tr><th>Prix</th><th>Km</th><th>Année</th></tr>
+    ${r.comps.map(c=>`<tr><td>${eur(c.prix)}</td><td>${c.km.toLocaleString('fr-FR')}</td><td>${c.annee}</td></tr>`).join('')}
+    </table>`;
+  document.getElementById('pr-suggestions').innerHTML = `<h2>Notes</h2><p>Rapport généré le ${new Date().toLocaleDateString('fr-FR')} avec Cote Réelle.</p>`;
+  window.print();
+});
+
+/* init */
+render();
+</script>
+</body>
+</html>
