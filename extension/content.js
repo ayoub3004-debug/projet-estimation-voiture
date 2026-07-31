@@ -37,12 +37,12 @@ function extractFromPage() {
   const text = document.body ? document.body.innerText : '';
   const clean = text.replace(/\u00a0/g, ' ');
 
-  const priceMatches = [...clean.matchAll(/(\d[\d\s]{2,7})\s?(?:€|EUR)/gi)]
+  const priceMatches = [...clean.matchAll(/(\d[\d ]{2,7})\s?(?:€|EUR)/gi)]
     .map(m => parseInt(m[1].replace(/\s/g, ''), 10))
     .filter(n => n >= 300 && n <= 300000);
   const prix = priceMatches.length ? priceMatches[0] : null;
 
-  const kmMatch = clean.match(/(\d[\d\s]{2,6})\s?km/i);
+  const kmMatch = clean.match(/(\d[\d ]{2,6})\s?km\b/i) || clean.match(/(?:km|kilom[ée]trage)\s*[:\-]?\s*(\d[\d ]{2,6})/i);
   const km = kmMatch ? parseInt(kmMatch[1].replace(/\s/g, ''), 10) : null;
 
   const yearMatches = [...clean.matchAll(/\b(19[9]\d|20[0-2]\d)\b/g)].map(m => parseInt(m[1], 10));
