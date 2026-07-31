@@ -360,14 +360,15 @@ table.hist-table tr:hover td{background:var(--panel-2);}
 
     <!-- Analyse rapide (paste) -->
     <div class="section-block" style="border-color:#4a4a4c;">
-      <div class="section-head open" data-target="s-paste"><h3>⚡ Analyse rapide d'une annonce</h3><span class="chev">▶</span></div>
+      <div class="section-head open" data-target="s-paste"><h3>⚡ Analyse rapide (une ou plusieurs annonces)</h3><span class="chev">▶</span></div>
       <div class="section-body" id="s-paste">
-        <div class="hint">Ouvre l'annonce (Leboncoin, La Centrale, AutoScout24…), fais <strong>Ctrl+A / Ctrl+C</strong> sur la page (ou sélectionne juste le bloc titre + prix + caractéristiques), colle ici. L'outil détecte prix, kilométrage, année, carburant et boîte automatiquement.</div>
-        <div class="field"><label>Lien de l'annonce (optionnel, pour référence)</label><input type="text" id="paste-url" placeholder="https://www.leboncoin.fr/..."></div>
-        <div class="field"><label>Texte collé de l'annonce</label>
-          <textarea id="paste-text" rows="5" placeholder="Colle ici le texte de la page (titre, prix, km, année…)" style="background:var(--panel-3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:9px 10px;font-size:12.8px;font-family:'Inter';width:100%;resize:vertical;"></textarea>
+        <div class="hint">Ouvre une ou plusieurs annonces, fais <strong>Ctrl+A / Ctrl+C</strong> sur chacune, colle tout ici <strong>à la suite, séparé par une ligne vide</strong> entre chaque annonce. L'outil détecte prix, km, année (et marque/modèle) pour chacune et te propose de toutes les ajouter d'un coup comme comparables.</div>
+        <div class="field"><label>Lien de l'annonce (optionnel, seulement si une seule annonce collée)</label><input type="text" id="paste-url" placeholder="https://www.leboncoin.fr/..."></div>
+        <div class="field"><label>Texte collé (une ou plusieurs annonces, séparées par une ligne vide)</label>
+          <textarea id="paste-text" rows="6" placeholder="Annonce 1 : titre, prix, km, année…&#10;&#10;Annonce 2 : titre, prix, km, année…&#10;&#10;Annonce 3 : ..." style="background:var(--panel-3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:9px 10px;font-size:12.8px;font-family:'Inter';width:100%;resize:vertical;"></textarea>
         </div>
         <button class="btn primary small" id="btn-parse" style="width:100%;">🔍 Analyser le texte collé</button>
+
         <div id="parse-result" style="display:none;">
           <div class="hint" style="margin-top:8px;color:var(--text-dim);">Vérifie les valeurs détectées avant de les utiliser :</div>
           <div class="row2">
@@ -382,6 +383,12 @@ table.hist-table tr:hover td{background:var(--panel-2);}
             <button class="btn small" id="btn-use-vehicule">🚗 C'est le véhicule à acheter</button>
             <button class="btn small" id="btn-use-comp">📊 Ajouter comme comparable</button>
           </div>
+        </div>
+
+        <div id="parse-multi-result" style="display:none;">
+          <div class="hint" style="margin-top:8px;color:var(--text-dim);"><strong id="multi-count">0</strong> annonces détectées — décoche celles à ignorer, puis ajoute le reste d'un coup :</div>
+          <div id="multi-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+          <button class="btn primary small" id="btn-use-multi" style="width:100%;margin-top:8px;">📊 Ajouter les annonces cochées comme comparables</button>
         </div>
       </div>
     </div>
@@ -734,6 +741,7 @@ function renderCompsForm(){
   const c = document.getElementById('comps-list');
   c.innerHTML = '';
   state.comps.forEach((comp, i)=>{
+    const hasExtra = comp.lien || comp.departement || comp.photo || comp.vendue;
     const row = document.createElement('div');
     row.className = 'comp-row';
     row.style.gridTemplateColumns = '1fr 1fr 1fr 28px';
@@ -743,14 +751,25 @@ function renderCompsForm(){
       <input type="number" placeholder="Km" value="${comp.km}" data-i="${i}" data-f="km">
       <input type="number" placeholder="Année" value="${comp.annee}" data-i="${i}" data-f="annee">
       <button class="comp-remove" data-remove="${i}">✕</button>
-      <input type="text" placeholder="Lien (optionnel)" value="${comp.lien||''}" data-i="${i}" data-f="lien" style="grid-column:1/3;margin-top:4px;">
-      <input type="text" placeholder="Dépt (ex: 75)" maxlength="3" value="${comp.departement||''}" data-i="${i}" data-f="departement" style="grid-column:3/4;margin-top:4px;">
-      <input type="text" placeholder="URL photo (optionnel)" value="${comp.photo||''}" data-i="${i}" data-f="photo" style="grid-column:1/3;margin-top:4px;">
-      <input type="date" title="Date de l'annonce" value="${comp.date||''}" data-i="${i}" data-f="date" style="grid-column:3/4;margin-top:4px;">
-      <label style="grid-column:1/5;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-faint);margin-top:4px;cursor:pointer;">
-        <input type="checkbox" data-vendue="${i}" ${comp.vendue?'checked':''} style="width:13px;height:13px;"> Annonce vendue / retirée (exclue du calcul, conservée pour référence)
-      </label>`;
+      <button type="button" class="comp-toggle-extra" data-toggle="${i}" style="grid-column:1/5;background:none;border:none;color:var(--text-faint);font-size:11px;text-align:left;padding:2px 0;cursor:pointer;">${hasExtra?'▾':'▸'} Détails (photo, département, lien, date, vendue)</button>
+      <div class="comp-extra" data-extra="${i}" style="grid-column:1/5;display:${hasExtra?'grid':'none'};grid-template-columns:1fr 1fr;gap:6px;">
+        <input type="text" placeholder="Lien (optionnel)" value="${comp.lien||''}" data-i="${i}" data-f="lien" style="grid-column:1/3;">
+        <input type="text" placeholder="Dépt (ex: 75)" maxlength="3" value="${comp.departement||''}" data-i="${i}" data-f="departement">
+        <input type="text" placeholder="URL photo (optionnel)" value="${comp.photo||''}" data-i="${i}" data-f="photo">
+        <input type="date" title="Date de l'annonce" value="${comp.date||''}" data-i="${i}" data-f="date">
+        <label style="grid-column:1/3;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-faint);margin-top:2px;cursor:pointer;">
+          <input type="checkbox" data-vendue="${i}" ${comp.vendue?'checked':''} style="width:13px;height:13px;"> Annonce vendue / retirée (exclue du calcul, conservée pour référence)
+        </label>
+      </div>`;
     c.appendChild(row);
+  });
+  c.querySelectorAll('[data-toggle]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const extra = c.querySelector(`[data-extra="${btn.dataset.toggle}"]`);
+      const open = extra.style.display === 'grid';
+      extra.style.display = open ? 'none' : 'grid';
+      btn.textContent = (open?'▸':'▾') + ' Détails (photo, département, lien, date, vendue)';
+    });
   });
   c.querySelectorAll('input[data-f]').forEach(inp=>{
     inp.addEventListener('input', ()=>{
@@ -772,8 +791,8 @@ function renderCompsForm(){
   });
 }
 document.getElementById('btn-add-comp').addEventListener('click', ()=>addCompRow());
-// pré-remplir 3 lignes vides pour guider l'utilisateur
-addCompRow(); addCompRow(); addCompRow();
+// pré-remplir 1 ligne vide pour guider l'utilisateur (le collage multi ci-dessus est le moyen rapide d'en ajouter plusieurs)
+addCompRow();
 
 /* ============================================================
    ANALYSE RAPIDE — parsing d'un texte d'annonce collé
@@ -804,13 +823,14 @@ function parseAnnonceText(text){
   const clean = text.replace(/\u00a0/g,' ');
 
   // Prix : nombre suivi de € (ou EUR), on garde le plus plausible (500 à 200000)
-  const priceMatches = [...clean.matchAll(/(\d[\d\s]{2,7})\s?(?:€|EUR)/gi)]
+  const priceMatches = [...clean.matchAll(/(\d[\d ]{2,7})\s?(?:€|EUR)/gi)]
     .map(m=>parseInt(m[1].replace(/\s/g,''),10))
     .filter(n=>n>=300 && n<=300000);
   const prix = priceMatches.length ? priceMatches[0] : null;
 
-  // Kilométrage
-  const kmMatch = clean.match(/(\d[\d\s]{2,6})\s?km/i);
+  // Kilométrage — deux formats : "85 000 km" (chiffre puis label) ou
+  // "km: 85000" / "Kilométrage : 85000" (label puis chiffre)
+  const kmMatch = clean.match(/(\d[\d ]{2,6})\s?km\b/i) || clean.match(/(?:km|kilom[ée]trage)\s*[:\-]?\s*(\d[\d ]{2,6})/i);
   const km = kmMatch ? parseInt(kmMatch[1].replace(/\s/g,''),10) : null;
 
   // Année (1990-2026, en excluant ce qui ressemble à un kilométrage/prix déjà capté)
@@ -826,19 +846,70 @@ function parseAnnonceText(text){
   return {prix, km, annee, carburant, boite, titre, marque, modele};
 }
 
+let lastMulti = [];
+
+function splitAnnonceBlocks(text){
+  // Découpe sur les lignes vides (une annonce = un bloc de texte séparé
+  // par au moins une ligne blanche). Si l'utilisateur n'a collé qu'une
+  // seule annonce sans ligne vide, ça reste un seul bloc.
+  return text.split(/\n\s*\n+/).map(b=>b.trim()).filter(Boolean);
+}
+
 document.getElementById('btn-parse').addEventListener('click', ()=>{
   const text = document.getElementById('paste-text').value;
-  if(!text.trim()){ alert('Colle d\'abord le texte de l\'annonce.'); return; }
-  lastParsed = parseAnnonceText(text);
-  document.getElementById('pr-prix').value = lastParsed.prix || '';
-  document.getElementById('pr-km').value = lastParsed.km || '';
-  document.getElementById('pr-annee').value = lastParsed.annee || '';
-  const metaParts = [lastParsed.marque, lastParsed.modele, lastParsed.carburant, lastParsed.boite].filter(Boolean);
-  document.getElementById('pr-meta').value = metaParts.join(' / ') || 'non détecté';
-  document.getElementById('parse-result').style.display = 'block';
-  if(!lastParsed.prix && !lastParsed.km && !lastParsed.annee){
-    alert('Rien de détecté automatiquement — renseigne les champs à la main ci-dessous, ou complète le formulaire manuellement plus bas.');
+  if(!text.trim()){ alert('Colle d\'abord le texte d\'une ou plusieurs annonces.'); return; }
+
+  const blocks = splitAnnonceBlocks(text);
+  const parsedBlocks = blocks.map(b=>({raw:b, ...parseAnnonceText(b)}))
+    .filter(p=>p.prix || p.km || p.annee);
+
+  document.getElementById('parse-result').style.display = 'none';
+  document.getElementById('parse-multi-result').style.display = 'none';
+
+  if(parsedBlocks.length >= 2){
+    // Mode lot : plusieurs annonces détectées
+    lastMulti = parsedBlocks;
+    document.getElementById('multi-count').textContent = parsedBlocks.length;
+    const list = document.getElementById('multi-list');
+    list.innerHTML = parsedBlocks.map((p,i)=>{
+      const label = [p.marque, p.modele].filter(Boolean).join(' ') || (p.titre||'').slice(0,40) || `Annonce ${i+1}`;
+      return `<label class="check-item checked" style="justify-content:space-between;">
+        <span style="display:flex;align-items:center;gap:8px;"><input type="checkbox" data-multi-check="${i}" checked> ${label}</span>
+        <span class="mono" style="font-size:11.5px;color:var(--text-dim);">${p.prix?p.prix+' €':'?'} · ${p.km?p.km+' km':'?'} · ${p.annee||'?'}</span>
+      </label>`;
+    }).join('');
+    document.getElementById('parse-multi-result').style.display = 'block';
+  } else if(parsedBlocks.length === 1){
+    // Mode simple : une seule annonce
+    lastParsed = parsedBlocks[0];
+    document.getElementById('pr-prix').value = lastParsed.prix || '';
+    document.getElementById('pr-km').value = lastParsed.km || '';
+    document.getElementById('pr-annee').value = lastParsed.annee || '';
+    const metaParts = [lastParsed.marque, lastParsed.modele, lastParsed.carburant, lastParsed.boite].filter(Boolean);
+    document.getElementById('pr-meta').value = metaParts.join(' / ') || 'non détecté';
+    document.getElementById('parse-result').style.display = 'block';
+  } else {
+    alert('Rien de détecté automatiquement — renseigne les champs à la main dans le formulaire plus bas, ou vérifie que le texte collé contient bien un prix / kilométrage / année.');
   }
+});
+
+document.getElementById('btn-use-multi').addEventListener('click', ()=>{
+  const checks = document.querySelectorAll('[data-multi-check]');
+  let added = 0;
+  checks.forEach(cb=>{
+    if(!cb.checked) return;
+    const p = lastMulti[+cb.dataset.multiCheck];
+    if(!p || !p.prix || !p.km || !p.annee) return; // il faut les 3 minimum
+    state.comps.push({prix:p.prix, km:p.km, annee:p.annee, lien:'', date:new Date().toISOString().slice(0,10), vendue:false});
+    added++;
+  });
+  if(added === 0){ alert('Aucune des annonces cochées n\'a prix + km + année complets — complète-les à la main dans "Annonces du marché".'); return; }
+  renderCompsForm();
+  render();
+  document.getElementById('s-comps').classList.remove('collapsed');
+  document.querySelector('[data-target="s-comps"]').classList.add('open');
+  document.getElementById('paste-text').value='';
+  document.getElementById('parse-multi-result').style.display='none';
 });
 
 document.getElementById('btn-use-vehicule').addEventListener('click', ()=>{
@@ -1341,7 +1412,7 @@ document.getElementById('btn-reset').addEventListener('click', ()=>{
   document.querySelectorAll('.form-panel input[type=checkbox]').forEach(i=>{ i.checked=false; i.closest('.check-item')?.classList.remove('checked'); });
   state.hist = {}; state.eq = {}; state.comps = []; state.frais = {};
   renderFraisForm();
-  addCompRow(); addCompRow(); addCompRow();
+  addCompRow();
   render();
 });
 
