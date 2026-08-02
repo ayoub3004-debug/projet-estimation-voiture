@@ -1,0 +1,54 @@
+DRIVLY — dossier à déposer sur votre hébergement
+=================================================
+
+À METTRE EN LIGNE MAINTENANT (7 fichiers)
+
+  index.html              le site complet
+  manifest.webmanifest    permet l'installation sur l'écran d'accueil
+  sw.js                   fonctionnement hors réseau
+  icon-192.png            icône de l'application
+  icon-512.png            icône de l'application
+  icon-maskable.png       icône Android
+  apple-touch-icon.png    icône iPhone
+
+Déposez ces fichiers à la racine de votre domaine, en gardant les noms
+exacts et le même niveau de dossier. Rien à installer, rien à configurer.
+Ouvrez ensuite https://votre-domaine.fr et c'est en ligne.
+
+Le HTTPS est indispensable : sans lui, l'installation en application et
+le fonctionnement hors réseau ne marchent pas. Tous les hébergeurs le
+fournissent gratuitement aujourd'hui.
+
+
+À GARDER DE CÔTÉ POUR PLUS TARD
+
+  api/cote.php            adaptateur pour une source de cotation payante
+  api/cote.js             même chose pour Vercel / Netlify
+
+N'uploadez ce dossier api/ que le jour où vous aurez souscrit un
+abonnement de cotation. D'ici là il ne sert à rien : l'application
+fonctionne avec votre relevé de marché manuel.
+
+
+CE QU'IL RESTE À FAIRE AVANT D'OUVRIR AU PUBLIC
+
+  - Mentions légales (obligatoires pour un site commercial français)
+  - Politique de confidentialité et case de consentement sur le
+    formulaire de reprise, qui collecte nom, téléphone et e-mail
+  - Renseigner votre e-mail et votre WhatsApp dans Réglages > Reprise,
+    sinon les demandes de reprise n'arrivent nulle part
+
+Tant que ces trois points ne sont pas réglés, laissez le site en accès
+restreint ou n'en communiquez pas l'adresse.
+
+
+PREMIER DÉMARRAGE
+
+  1. Ouvrez le site, choisissez « Je suis marchand »
+  2. Onglet Réglages : vos seuils de marge, vos prix de frais réels,
+     votre régime de TVA, votre e-mail de contact
+  3. Onglet Estimation : remplissez une fiche, recopiez six à dix
+     annonces dans « Relevé de marché », analysez
+
+Le bandeau en haut du résultat vous dit toujours d'où viennent les
+chiffres : ocre = simulés, gris = votre relevé, vert = source connectée.
