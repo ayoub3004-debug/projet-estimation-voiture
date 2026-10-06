@@ -1,13 +1,19 @@
 /* Drivly — service worker
    Met l'application en cache pour qu'elle fonctionne sans réseau,
-   par exemple dans un parking souterrain. */
+   par exemple dans un parking souterrain.
+
+   Versionnement : changez CACHE (ex. "drivly-v2") quand vous modifiez
+   manifest.webmanifest ou les icônes, pour que les visiteurs qui ont déjà
+   installé l'app reçoivent la nouvelle version au lieu de garder l'ancienne
+   indéfiniment. Inutile d'y penser pour index.html : il est toujours repris
+   depuis le réseau en premier, la mise à jour est automatique. */
 const CACHE = "drivly-v1";
 const FICHIERS = [
-  "./",
   "./index.html",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",
+  "./icon-maskable.png",
   "./apple-touch-icon.png"
 ];
 
@@ -31,7 +37,7 @@ self.addEventListener("fetch", e => {
   const req = e.request;
   if(req.method !== "GET") return;
   const url = new URL(req.url);
-  if(url.origin !== location.origin) return;          /* polices, annonces : réseau direct */
+  if(url.origin !== location.origin) return;          /* toute ressource externe : réseau direct */
 
   if(req.mode === "navigate"){
     /* réseau d'abord pour la page, cache en secours hors ligne */
