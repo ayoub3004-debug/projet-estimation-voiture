@@ -37,12 +37,12 @@ return [
     /* Adresse(s) exacte(s) de votre site, celles qui ont le droit d'appeler
        cet adaptateur. Sans « https:// » à la fin, ex. SANS slash final. */
     'origines' => [
-        'https://votre-domaine.fr',
+        'https://projet-estimation-voiture.vercel.app',
     ],
 
     /* Facultatif : jeton à coller dans Réglages > Source des données > Clé
        d'accès, côté professionnel, pour ne pas être limité par le quota de
        requêtes public. Laissez vide pour ne pas activer cette option. */
-    'jeton_pro' => '',
+    'jeton_pro' => '21102004',
 
 ];
