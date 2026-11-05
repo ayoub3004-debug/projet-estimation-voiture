@@ -287,6 +287,7 @@ module.exports = async (req, res) => {
     const { texte, urls } = lireReponse(data);
     const brut = extraireJson(texte);
     const annonces = nettoyerAnnonces(brut, urls, fiche);
+    console.log('[cote] diag', { texteLen: texte.length, brutNb: Array.isArray(brut && brut.annonces) ? brut.annonces.length : null, citees: urls.size, gardees: annonces.length });
 
     if (annonces.length < MIN_ANNONCES) {
       return res.status(422).json({
