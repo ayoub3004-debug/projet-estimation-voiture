@@ -1348,7 +1348,7 @@ async function interrogerMarche(v){
       body:JSON.stringify(corps), signal:ctrl.signal});
     if(!rep.ok){
       let msg = "réponse " + rep.status;
-      try{ const j = await rep.json(); if(j && j.erreur) msg = String(j.erreur).slice(0, 160); }catch(e){}
+      try{ const j = await rep.json(); const m = j && (j.erreur || j.error); if(m) msg = String(m).slice(0, 160); }catch(e){}
       /* adaptateur absent ou pas encore configuré : inutile de réessayer à chaque analyse */
       if(rep.status === 404 || rep.status === 501) etat.apiIndisponible = true;
       throw new Error(msg);
