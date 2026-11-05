@@ -1342,7 +1342,7 @@ async function interrogerMarche(v){
   const entetes = {"Content-Type":"application/json"};
   if(R.apiCle) entetes["Authorization"] = "Bearer " + R.apiCle;
   const ctrl = new AbortController();
-  const minuteur = setTimeout(()=>ctrl.abort(), 12000);
+  const minuteur = setTimeout(()=>ctrl.abort(), 120000);
   try{
     const rep = await fetch(R.apiUrl, {method:"POST", headers:entetes,
       body:JSON.stringify(corps), signal:ctrl.signal});
